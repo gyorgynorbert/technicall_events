@@ -36,7 +36,7 @@ Route::middleware(['auth', 'admin', 'verified'])->group(function () {
     Route::resource('grades', GradeController::class);
     Route::resource('students', StudentController::class);
     Route::resource('products', ProductController::class);
-    Route::resource('orders', AdminOrderController::class)->only(['index', 'show']);
+    Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update']);
 
     Route::post('students/{student}/photos', [PhotoController::class, 'store'])->name('students.photos.store');
     Route::delete('photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');

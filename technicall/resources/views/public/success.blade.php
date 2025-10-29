@@ -1,6 +1,6 @@
 <x-public-layout>
     <div class="max-w-2xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
-        <h1 class="text-3xl font-bold text-gray-900">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Sikeres rendelés!
         </h1>
         <p class="mt-4 text-lg text-gray-600">

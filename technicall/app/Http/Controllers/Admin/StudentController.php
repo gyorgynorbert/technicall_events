@@ -13,9 +13,25 @@ class StudentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request) // <-- Add Request
     {
-        $students = Student::with('grade.school')->orderBy('name')->paginate(20);
+        // Start building the query
+        $query = Student::query();
+
+        // Eager load the relationships
+        $query->with('grade.school');
+
+        // Check if a search term was provided
+        if ($request->has('search') && $request->input('search') != '') {
+            $searchTerm = $request->input('search');
+
+            // Add a WHERE clause to search the student's name
+            $query->where('name', 'LIKE', "%{$searchTerm}%");
+        }
+
+        // Order and paginate the results
+        $students = $query->orderBy('name')->paginate(20)
+            ->withQueryString(); // <-- Appends the search query to pagination links
 
         return view('admin.students.index', compact('students'));
     }
@@ -41,11 +57,7 @@ class StudentController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        // Add the auto-generated access_key
         $validated['access_key'] = Str::random(16);
-
-        // We'll add a loop here later to ensure the key is truly unique
-        // For now, this is fine.
 
         Student::create($validated);
 

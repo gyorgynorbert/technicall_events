@@ -1,7 +1,7 @@
 <x-public-layout>
     <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-bold text-gray-900 text-center">Rendelés összegzése</h1>
-        <p class="text-center text-gray-600 mt-2">2. lépés: Add meg az adataidat</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 text-center">Rendelés összegzése</h1>
+        <p class="text-center text-gray-600 dark:text-gray-300 mt-2">2. lépés: Add meg az adataidat</p>
 
         @if ($errors->any())
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-6" role="alert">
@@ -16,8 +16,8 @@
         <form action="{{ route('order.submit') }}" method="POST" class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-12">
             @csrf
 
-            <div class="bg-white p-6 rounded-lg shadow-sm border space-y-4">
-                <h2 class="text-2xl font-semibold text-gray-800">Elérhetőség</h2>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm space-y-4">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Elérhetőség</h2>
 
                 <div>
                     <x-input-label for="name" :value="__('Név (Name)')" />
@@ -35,29 +35,29 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow-sm border">
-                <h2 class="text-2xl font-semibold text-gray-800">Kosár tartalma</h2>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm ">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Kosár tartalma</h2>
 
                 <div class="mt-4 space-y-4">
                     @foreach ($cart['items'] as $item)
-                        <div class="flex items-center space-x-4 border-b pb-2">
+                        <div class="flex items-center space-x-4 pb-2">
                             <img src="{{ $item['photo_url'] }}" alt="{{ $item['photo_label'] }}" class="w-16 h-16 rounded-md object-cover">
                             <div class="flex-1">
-                                <p class="font-semibold">{{ $item['product_name'] }}</p>
-                                <p class="text-sm text-gray-600">Kép: {{ $item['photo_label'] }}</p>
-                                <p class="text-sm text-gray-600">Mennyiség: {{ $item['quantity'] }}</p>
+                                <p class="font-semibold text-gray-600 dark:text-gray-300">{{ $item['product_name'] }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Kép: {{ $item['photo_label'] }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">Mennyiség: {{ $item['quantity'] }}</p>
                             </div>
                             <div class="text-right">
-                                <p class="font-semibold">{{ number_format($item['subtotal'], 2) }} RON</p>
+                                <p class="font-semibold text-gray-600 dark:text-gray-300">{{ number_format($item['subtotal'], 2) }} LEI</p>
                             </div>
                         </div>
                     @endforeach
                 </div>
 
                 <div class="mt-6 border-t pt-4">
-                    <p class="text-xl font-bold text-gray-900 flex justify-between">
+                    <p class="text-xl font-bold text-gray-900 dark:text-gray-100 flex justify-between">
                         <span>Végösszeg:</span>
-                        <span>{{ number_format($cart['total_price'], 2) }} RON</span>
+                        <span>{{ number_format($cart['total_price'], 2) }} LEI</span>
                     </p>
                 </div>
 

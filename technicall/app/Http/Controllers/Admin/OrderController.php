@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Usernotnull\Toast\Concerns\WireToast;
 
 class OrderController extends Controller
 {
+    use WireToast;
+
     /**
      * Display a listing of all orders.
      */
@@ -60,7 +64,25 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order)
     {
-        //
+        $validated = $request->validate([
+            'status' => [
+                'required',
+                'string',
+                // Use the constants from the model for validation
+                Rule::in([
+                    Order::STATUS_PENDING,
+                    Order::STATUS_PROCESSING,
+                    Order::STATUS_COMPLETED,
+                    Order::STATUS_CANCELLED,
+                ]),
+            ],
+        ]);
+
+        $order->update($validated);
+
+        toast()->success('Order status updated successfully.')->push();
+
+        return back();
     }
 
     /**
