@@ -4,28 +4,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Event extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
-        'description',
-        'event_date',
+        'event_date', // From your form
+        'description', // From your form
     ];
 
     /**
-     * An Event can have many Schools.
+     * The attributes that should be cast.
+     *
+     * @var array
      */
-    public function schools(): HasMany
+    protected $casts = [
+        'event_date' => 'date', // Cast to Carbon instance
+    ];
+
+    /**
+     * Get the schools associated with the event.
+     */
+    public function schools()
     {
-        return $this->hasMany(School::class);
+        return $this->belongsToMany(School::class, 'event_school');
     }
 }

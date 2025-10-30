@@ -4,34 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class School extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     */
+    // This is correct from your old SchoolController
     protected $fillable = [
-        'event_id',
         'name',
         'location',
     ];
 
     /**
-     * A School belongs to one Event.
+     * The events that this school participates in.
      */
-    public function event(): BelongsTo
+    public function events()
     {
-        return $this->belongsTo(Event::class);
+        // The other side of the many-to-many relationship
+        return $this->belongsToMany(Event::class, 'event_school');
     }
 
     /**
-     * A School can have many Grades.
+     * Get the grades for the school.
      */
-    public function grades(): HasMany
+    public function grades()
     {
         return $this->hasMany(Grade::class);
     }

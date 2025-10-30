@@ -4,19 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\School; // Added for create/edit forms
 use Illuminate\Http\Request;
-use Usernotnull\Toast\Concerns\WireToast;
+use Illuminate\Support\Facades\DB; // Added for transactions
+use Illuminate\Support\Facades\Log; // Added for logging
 
 class EventController extends Controller
 {
-    use WireToast;
-
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $events = Event::orderBy('event_date', 'desc')->paginate(10);
+        // This still works perfectly with belongsToMany
+        $events = Event::withCount('schools')->paginate(10);
 
         return view('admin.events.index', compact('events'));
     }
@@ -26,9 +27,10 @@ class EventController extends Controller
      */
     public function create()
     {
-        $event = new Event; // Empty instance for the form
+        // We need to pass all schools to the form
+        $schools = School::orderBy('name')->get();
 
-        return view('admin.events.create', compact('event'));
+        return view('admin.events.create', compact('schools'));
     }
 
     /**
@@ -36,17 +38,39 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
+        // Correct validation rules from your form
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'event_date' => 'required|date',
             'description' => 'nullable|string',
-            'event_date' => 'nullable|date',
+            'school_ids' => 'nullable|array', // Validate the array
+            'school_ids.*' => 'exists:schools,id', // Validate each ID in the array
         ]);
 
-        Event::create($validated);
+        try {
+            DB::transaction(function () use ($validated) {
+                // 1. Create the event
+                $event = Event::create([
+                    'name' => $validated['name'],
+                    'event_date' => $validated['event_date'],
+                    'description' => $validated['description'],
+                ]);
 
-        toast()->success('Event created successfully.')->push();
+                // 2. Attach the schools
+                if (! empty($validated['school_ids'])) {
+                    $event->schools()->sync($validated['school_ids']);
+                }
+            });
 
-        return redirect()->route('events.index');
+            toast()->success('Event created successfully.')->push();
+
+            return redirect()->route('events.index');
+        } catch (\Exception $e) {
+            Log::error('Event creation failed: '.$e->getMessage());
+            toast()->danger('Error creating event. Please try again.')->push();
+
+            return back()->withInput();
+        }
     }
 
     /**
@@ -54,7 +78,10 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        //
+        // Eager load schools for the show view
+        $event->load('schools');
+
+        return view('admin.events.show', compact('event'));
     }
 
     /**
@@ -62,7 +89,11 @@ class EventController extends Controller
      */
     public function edit(Event $event)
     {
-        return view('admin.events.edit', compact('event'));
+        // We need all schools, and the event's currently selected schools
+        $event->load('schools'); // Loads $event->schools relationship
+        $schools = School::orderBy('name')->get();
+
+        return view('admin.events.edit', compact('event', 'schools'));
     }
 
     /**
@@ -70,17 +101,39 @@ class EventController extends Controller
      */
     public function update(Request $request, Event $event)
     {
+        // Same validation as store
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'event_date' => 'required|date',
             'description' => 'nullable|string',
-            'event_date' => 'nullable|date',
+            'school_ids' => 'nullable|array',
+            'school_ids.*' => 'exists:schools,id',
         ]);
 
-        $event->update($validated);
+        try {
+            DB::transaction(function () use ($event, $validated) {
+                // 1. Update the event
+                $event->update([
+                    'name' => $validated['name'],
+                    'event_date' => $validated['event_date'],
+                    'description' => $validated['description'],
+                ]);
 
-        toast()->success('Event updated successfully.')->push();
+                // 2. Sync the schools
+                // If school_ids is empty or null, sync([]) will detach all schools.
+                $schoolIds = $validated['school_ids'] ?? [];
+                $event->schools()->sync($schoolIds);
+            });
 
-        return redirect()->route('events.index');
+            toast()->success('Event updated successfully.')->push();
+
+            return redirect()->route('events.index');
+        } catch (\Exception $e) {
+            Log::error("Event update failed (ID: {$event->id}): ".$e->getMessage());
+            toast()->danger('Error updating event. Please try again.')->push();
+
+            return back()->withInput();
+        }
     }
 
     /**
@@ -88,11 +141,18 @@ class EventController extends Controller
      */
     public function destroy(Event $event)
     {
-        // We'll add a check here later to prevent deleting an event that has schools
+        // This is now SAFE. Deleting the event will only delete
+        // the links in the 'event_school' table, not the schools.
+        try {
+            $eventName = $event->name;
+            $event->delete();
 
-        $event->delete();
-
-        toast()->success('Event deleted successfully.')->push();
+            // Simple, confident success message.
+            toast()->success("Event '{$eventName}' deleted successfully.")->push();
+        } catch (\Exception $e) {
+            Log::error("Event deletion failed (ID: {$event->id}): ".$e->getMessage());
+            toast()->danger('Error deleting event. Please try again.')->push();
+        }
 
         return redirect()->route('events.index');
     }

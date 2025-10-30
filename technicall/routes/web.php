@@ -29,8 +29,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified', 'admin'])->name('dashboard');
 
 Route::middleware(['auth', 'admin', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('events', EventController::class);
     Route::resource('schools', SchoolController::class);
     Route::resource('grades', GradeController::class);

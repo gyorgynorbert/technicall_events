@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Event;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class SchoolFactory extends Factory
@@ -15,8 +14,6 @@ class SchoolFactory extends Factory
     public function definition(): array
     {
         return [
-            // Assign this school to a random, existing event
-            'event_id' => Event::inRandomOrder()->first()->id,
             'name' => $this->faker->streetName().' School',
             'location' => $this->faker->city(),
         ];

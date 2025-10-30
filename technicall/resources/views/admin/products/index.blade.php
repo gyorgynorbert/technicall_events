@@ -31,11 +31,17 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ number_format($product->price, 2) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <a href="{{ route('products.edit', $product) }}" class="text-indigo-600 hover:text-indigo-900 mr-4">Edit</a>
-                                        <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>
-                                        </form>
+                                    
+                                        <x-danger-button
+                                            x-data=""
+                                            x-on:click.prevent="$dispatch('open-modal', 'delete-product-{{ $product->id }}')"
+                                        >{{ __('Delete') }}</x-danger-button>
+                                    
+                                        <x-confirm-delete-modal
+                                            :name="'delete-product-' . $product->id"
+                                            :actionUrl="route('products.destroy', $product)"
+                                            :title="'Delete Product: ' . $product->name"
+                                        />
                                     </td>
                                 </tr>
                             @empty
