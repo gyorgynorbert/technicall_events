@@ -16,19 +16,28 @@ Route::get('/order/checkout', [OrderController::class, 'checkout'])->name('order
 Route::get('/order-success', function () {
     return view('public.success');
 })->name('order.success');
-Route::post('/order/add-to-cart', [OrderController::class, 'storeCart'])->name('order.cart.store');
-Route::post('/order/submit', [OrderController::class, 'storeOrder'])->name('order.submit');
+
+// Rate limit cart and order submission to prevent abuse
+Route::post('/order/add-to-cart', [OrderController::class, 'storeCart'])
+    ->middleware('throttle:public-orders')
+    ->name('order.cart.store');
+Route::post('/order/submit', [OrderController::class, 'storeOrder'])
+    ->middleware('throttle:order-submission')
+    ->name('order.submit');
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/order/{access_key}', [OrderController::class, 'show'])->name('order.show');
+// Rate limited to prevent access key brute-forcing
+Route::get('/order/{access_key}', [OrderController::class, 'show'])
+    ->middleware('throttle:public-orders')
+    ->name('order.show');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified', 'admin'])->name('dashboard');
 
-Route::middleware(['auth', 'admin', 'verified'])->group(function () {
+Route::middleware(['auth', 'admin', 'verified', 'throttle:admin'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('events', EventController::class);
     Route::resource('schools', SchoolController::class);
@@ -36,6 +45,7 @@ Route::middleware(['auth', 'admin', 'verified'])->group(function () {
     Route::resource('students', StudentController::class);
     Route::resource('products', ProductController::class);
     Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update']);
+    Route::get('orders/export/download', [AdminOrderController::class, 'export'])->name('orders.export');
 
     Route::post('students/{student}/photos', [PhotoController::class, 'store'])->name('students.photos.store');
     Route::delete('photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');

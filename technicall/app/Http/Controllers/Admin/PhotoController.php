@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StorePhotoRequest;
 use App\Models\Photo;
-use App\Models\Student;
+// CHANGE HERE
+use App\Models\Student; // Import new Form Request
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;      // Added for logging
 use Illuminate\Support\Facades\Storage;  // Added for file operations
@@ -14,20 +16,22 @@ class PhotoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, Student $student)
+    // CHANGE HERE
+    public function store(StorePhotoRequest $request, Student $student)
     {
-        $validated = $request->validate([
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'label' => 'nullable|string|max:255',
-        ]);
+        // CHANGE HERE
+        // Validation is handled by StorePhotoRequest
+        $validated = $request->validated();
 
         try {
             // 1. Store the file
+            // CHANGE HERE
             $path = $request->file('photo')->store('photos', 'public');
 
             // 2. Create the database record
             $student->photos()->create([
                 'path' => $path,
+                // CHANGE HERE
                 'label' => $validated['label'] ?? $request->file('photo')->getClientOriginalName(),
             ]);
 

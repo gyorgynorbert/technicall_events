@@ -13,6 +13,13 @@ class GradeSeeder extends Seeder
     public function run(): void
     {
         // Create 20 fake grades
-        Grade::factory(20)->create();
+        // Use firstOrCreate with 'name' and 'school_id' to avoid duplicates on multiple seed runs
+        $grades = Grade::factory(20)->make();
+        foreach ($grades as $grade) {
+            Grade::firstOrCreate(
+                ['name' => $grade->name, 'school_id' => $grade->school_id],
+                $grade->toArray()
+            );
+        }
     }
 }

@@ -13,6 +13,13 @@ class EventSeeder extends Seeder
     public function run(): void
     {
         // Create 5 fake events using the factory
-        Event::factory(5)->create();
+        // Use firstOrCreate with 'name' to avoid duplicates on multiple seed runs
+        $events = Event::factory(5)->make();
+        foreach ($events as $event) {
+            Event::firstOrCreate(
+                ['name' => $event->name],
+                $event->toArray()
+            );
+        }
     }
 }

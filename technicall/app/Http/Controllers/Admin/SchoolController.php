@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Event;
-use App\Models\School;     // Added for create/edit forms
-use App\Models\Student;   // Added for destroy calculation
+use App\Http\Requests\Admin\StoreSchoolRequest;
+use App\Http\Requests\Admin\UpdateSchoolRequest;     // Added for create/edit forms
+// CHANGE HERE
+use App\Models\Event;  // Import new Form Request
+use App\Models\School; // Import new Form Request
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;   // Added for transactions
 use Illuminate\Support\Facades\Log;  // Added for logging
@@ -37,14 +39,12 @@ class SchoolController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    // CHANGE HERE
+    public function store(StoreSchoolRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'location' => 'nullable|string|max:255',
-            'event_ids' => 'nullable|array', // Validate the array
-            'event_ids.*' => 'exists:events,id', // Validate each ID
-        ]);
+        // CHANGE HERE
+        // Validation is handled by StoreSchoolRequest
+        $validated = $request->validated();
 
         try {
             DB::transaction(function () use ($validated) {
@@ -64,7 +64,8 @@ class SchoolController extends Controller
 
             return redirect()->route('schools.index');
         } catch (\Exception $e) {
-            Log::error('School creation failed: ', $e->getMessage());
+            // CHANGE HERE
+            Log::error('School creation failed: '.$e->getMessage()); // Corrected logging
             toast()->danger('Error creating school. Please try again.')->push();
 
             return back()->withInput();
@@ -98,14 +99,12 @@ class SchoolController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, School $school)
+    // CHANGE HERE
+    public function update(UpdateSchoolRequest $request, School $school)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'location' => 'nullable|string|max:255',
-            'event_ids' => 'nullable|array',
-            'event_ids.*' => 'exists:events,id',
-        ]);
+        // CHANGE HERE
+        // Validation is handled by UpdateSchoolRequest
+        $validated = $request->validated();
 
         try {
             DB::transaction(function () use ($school, $validated) {
@@ -116,6 +115,7 @@ class SchoolController extends Controller
                 ]);
 
                 // 2. Sync the Events
+                // CHANGE HERE
                 $eventIds = $validated['event_ids'] ?? [];
                 $school->events()->sync($eventIds);
             });
@@ -136,25 +136,25 @@ class SchoolController extends Controller
      */
     public function destroy(School $school)
     {
+        // Guard clause to prevent deleting a school that is not empty
+        if ($school->grades()->exists()) {
+            toast()->danger("Cannot delete '{$school->name}'. It still contains grades.")->push();
+
+            return redirect()->route('schools.index');
+        }
+
         // This is still dangerous because of the Grade -> Student cascade.
         // We MUST keep this check.
         try {
             // --- Pre-deletion calculation of blast radius ---
             $schoolName = $school->name;
-            $gradeCount = $school->grades()->count();
-            $gradeIds = $school->grades->pluck('id');
-            $studentCount = Student::whereIn('grade_id', $gradeIds)->count();
             // --- End calculation ---
 
             // This will cascade to grades, students, photos, and orders
             $school->delete();
 
             // Provide specific, contextual feedback
-            if ($gradeCount > 0 || $studentCount > 0) {
-                toast()->success("School '{$schoolName}' deleted. This also deleted {$gradeCount} grades and {$studentCount} students.")->push();
-            } else {
-                toast()->success("School '{$schoolName}' deleted successfully.")->push();
-            }
+            toast()->success("School '{$schoolName}' deleted successfully.")->push();
         } catch (\Exception $e) {
             Log::error("School deletion failed (ID: {$school->id}): ".$e->getMessage());
             toast()->danger('Error deleting school. Please try again.')->push();

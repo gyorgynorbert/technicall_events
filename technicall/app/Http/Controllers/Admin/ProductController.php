@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreProductRequest;
+use App\Http\Requests\Admin\UpdateProductRequest;
 use App\Models\Product;
 use Illuminate\Database\QueryException;
-use Illuminate\Http\Request; // Added for file deletion
-use Illuminate\Support\Facades\Log;      // Added for logging
-use Illuminate\Support\Facades\Storage;  // Added to catch specific SQL errors
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -32,24 +33,12 @@ class ProductController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        $validated = $request->validated();
 
         try {
-            $path = $request->file('image')->store('products', 'public');
-
-            Product::create([
-                'name' => $validated['name'],
-                'description' => $validated['description'],
-                'price' => $validated['price'],
-                'image_path' => $path,
-            ]);
+            Product::create($validated);
 
             toast()->success('Product created successfully.')->push();
 
@@ -81,28 +70,12 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Image is optional on update
-        ]);
+        $validated = $request->validated();
 
         try {
-            $data = $validated;
-
-            if ($request->hasFile('image')) {
-                // 1. Delete old image
-                if ($product->image_path) {
-                    Storage::disk('public')->delete($product->image_path);
-                }
-                // 2. Store new image
-                $data['image_path'] = $request->file('image')->store('products', 'public');
-            }
-
-            $product->update($data);
+            $product->update($validated);
 
             toast()->success('Product updated successfully.')->push();
 
@@ -122,19 +95,10 @@ class ProductController extends Controller
     {
         try {
             $productName = $product->name;
-            $imagePath = $product->image_path;
-
-            // 1. Delete from database
             $product->delete();
-
-            // 2. If DB delete succeeded, delete file
-            if ($imagePath) {
-                Storage::disk('public')->delete($imagePath);
-            }
 
             toast()->success("Product '{$productName}' deleted successfully.")->push();
         } catch (QueryException $e) {
-            // Check for foreign key constraint violation (error code 1451)
             if ($e->errorInfo[1] == 1451) {
                 Log::warning("Failed to delete product (ID: {$product->id}) due to existing orders.");
                 toast()->danger("Cannot delete '{$product->name}'. It is linked to existing orders.")->push();
@@ -143,7 +107,6 @@ class ProductController extends Controller
                 toast()->danger('An unknown database error occurred.')->push();
             }
         } catch (\Exception $e) {
-            // Catch other errors (e.g., file system)
             Log::error("Product deletion failed (ID: {$product->id}): ".$e->getMessage());
             toast()->danger('An error occurred while deleting the product.')->push();
         }

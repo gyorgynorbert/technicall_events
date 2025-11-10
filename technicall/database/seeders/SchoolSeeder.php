@@ -17,15 +17,27 @@ class SchoolSeeder extends Seeder
 
         if ($events->isEmpty()) {
             $this->command->warn('No events found. Skipping school-event attachment.');
-            School::factory(10)->create();
+            // Use firstOrCreate with 'name' to avoid duplicates on multiple seed runs
+            $schools = School::factory(10)->make();
+            foreach ($schools as $school) {
+                School::firstOrCreate(
+                    ['name' => $school->name],
+                    $school->toArray()
+                );
+            }
 
             return;
         }
 
-        School::factory(10)->create()->each(function ($school) use ($events) {
+        // Use firstOrCreate with 'name' to avoid duplicates on multiple seed runs
+        $schools = School::factory(10)->make();
+        foreach ($schools as $school) {
+            $schoolModel = School::firstOrCreate(
+                ['name' => $school->name],
+                $school->toArray()
+            );
             $randomEvents = $events->random(rand(1, 2));
-
-            $school->events()->attach($randomEvents);
-        });
+            $schoolModel->events()->sync($randomEvents);
+        }
     }
 }

@@ -35,10 +35,11 @@
                             <div class="mt-6 space-y-6">
                                 @foreach($order->orderItems as $item)
                                     <div class="flex items-center space-x-4">
-                                        <img src="{{ $item->photo->url }}" alt="{{ $item->photo->label }}" 
-                                             class="w-24 h-24 rounded-md object-cover shadow cursor-pointer hover:opacity-80 transition"
-                                             @click="$dispatch('open-modal', { src: '{{ $item->photo->url }}' })">
-                                        
+                                        <x-photo-modal :photo="$item->photo->url" :label="$item->photo->label">
+                                            <img src="{{ $item->photo->url }}" alt="{{ $item->photo->label }}"
+                                                 class="w-24 h-24 rounded-md object-cover shadow">
+                                        </x-photo-modal>
+
                                         <div class="flex-1">
                                             <p class="font-semibold text-gray-900 dark:text-gray-100">{{ $item->product->name }}</p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Photo:</strong> {{ $item->photo->label }}</p>

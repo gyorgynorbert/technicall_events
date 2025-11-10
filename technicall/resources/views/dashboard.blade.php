@@ -13,21 +13,21 @@
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900 dark:text-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">New Orders (Pending)</h3>
-                        <p class="text-3xl font-semibold text-indigo-600">{{ $newOrders }}</p>
+                        <p class="text-3xl font-semibold text-indigo-600 dark:text-indigo-400">{{ $newOrders }}</p>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900 dark:text-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Revenue</h3>
-                        <p class="text-3xl font-semibold text-green-600">{{ number_format($totalRevenue, 2) }} RON</p>
+                        <p class="text-3xl font-semibold text-green-600 dark:text-green-400">{{ number_format($totalRevenue, 2) }} RON</p>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900 dark:text-gray-100">
                         <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Students</h3>
-                        <p class="text-3xl font-semibold text-blue-600">{{ $totalStudents }}</p>
+                        <p class="text-3xl font-semibold text-blue-600 dark:text-blue-400">{{ $totalStudents }}</p>
                     </div>
                 </div>
 
@@ -54,7 +54,7 @@
                                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                                         @forelse ($recentOrders as $order)
                                             <tr>
-                                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-indigo-600 sm:pl-0">
+                                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 sm:pl-0">
                                                     <a href="{{ route('orders.show', $order) }}">#{{ $order->id }}</a>
                                                 </td>
                                                 <td class="whitespace-nowrap px-3 py-4 text-sm">
@@ -71,7 +71,13 @@
                                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">{{ number_format($order->total_price, 2) }} RON</td>
                                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $order->created_at->format('Y-m-d') }}</td>
                                                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                                                    <a href="{{ route('orders.show', $order) }}" class="text-indigo-600 hover:text-indigo-900">View</a>
+                                                    <a href="{{ route('orders.show', $order) }}" class="inline-flex items-center px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-md transition">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                        View
+                                                    </a>
                                                 </td>
                                             </tr>
                                         @empty

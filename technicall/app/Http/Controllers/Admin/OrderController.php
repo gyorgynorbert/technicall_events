@@ -2,23 +2,50 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller; // Make sure this is present
-use App\Models\Order;                // Make sure this is present
+use App\Exports\OrdersExport;
+use App\Http\Controllers\Controller;
+use App\Models\Grade;
+use App\Models\Order;
+use App\Models\School;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OrderController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // This query is perfect
-        $orders = Order::with('student.grade.school')->orderBy('created_at', 'desc')->paginate(10);
+        $query = Order::with('student.grade.school')->orderBy('created_at', 'desc');
 
-        return view('admin.orders.index', compact('orders'));
+        // Apply filters if provided
+        if ($request->filled('school_id')) {
+            $query->whereHas('student.grade.school', function ($q) use ($request) {
+                $q->where('id', $request->school_id);
+            });
+        }
+
+        if ($request->filled('grade_id')) {
+            $query->whereHas('student.grade', function ($q) use ($request) {
+                $q->where('id', $request->grade_id);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $orders = $query->paginate(10)->appends($request->query());
+
+        // Get schools and grades for filter dropdowns
+        $schools = School::orderBy('name')->get();
+        $grades = Grade::with('school')->orderBy('name')->get();
+
+        return view('admin.orders.index', compact('orders', 'schools', 'grades'));
     }
 
     /**
@@ -51,6 +78,7 @@ class OrderController extends Controller
             ],
         ]);
 
+        // CHANGE HERE
         try {
             // 2. Update the order's status
             $order->update([
@@ -60,6 +88,7 @@ class OrderController extends Controller
             // 3. Give success feedback
             toast()->success('Order status updated successfully.')->push();
 
+            // CHANGE HERE
         } catch (\Exception $e) {
             // 4. Catch any DB errors
             Log::error("Order update failed (ID: {$order->id}): ".$e->getMessage());
@@ -91,5 +120,35 @@ class OrderController extends Controller
 
         // Redirect to the index page as the 'show' page no longer exists
         return redirect()->route('orders.index');
+    }
+
+    /**
+     * Export orders to Excel/CSV with optional filters
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'school_id' => 'nullable|exists:schools,id',
+            'grade_id' => 'nullable|exists:grades,id',
+            'status' => ['nullable', 'string', Rule::in([
+                Order::STATUS_PENDING,
+                Order::STATUS_PROCESSING,
+                Order::STATUS_COMPLETED,
+                Order::STATUS_CANCELLED,
+            ])],
+            'format' => 'required|in:xlsx,csv',
+        ]);
+
+        $schoolId = $request->input('school_id');
+        $gradeId = $request->input('grade_id');
+        $status = $request->input('status');
+        $format = $request->input('format', 'xlsx');
+
+        $filename = 'orders_' . now()->format('Y-m-d_His') . '.' . $format;
+
+        return Excel::download(
+            new OrdersExport($schoolId, $gradeId, $status),
+            $filename
+        );
     }
 }

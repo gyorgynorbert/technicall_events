@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Grade;
-use App\Models\School; // Added for create/edit forms
+use App\Http\Requests\Admin\StoreGradeRequest;
+use App\Http\Requests\Admin\UpdateGradeRequest; // Added for create/edit forms
+// CHANGE HERE
+use App\Models\Grade;  // Import new Form Request
+use App\Models\School; // Import new Form Request
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; // Added for logging
 
@@ -35,14 +38,15 @@ class GradeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    // CHANGE HERE
+    public function store(StoreGradeRequest $request)
     {
-        $validated = $request->validate([
-            'school_id' => 'required|exists:schools,id',
-            'name' => 'required|string|max:255',
-        ]);
+        // CHANGE HERE
+        // Validation is handled by StoreGradeRequest
+        $validated = $request->validated();
 
         try {
+            // CHANGE HERE
             Grade::create($validated);
             toast()->success('Grade created successfully.')->push();
 
@@ -80,14 +84,15 @@ class GradeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Grade $grade)
+    // CHANGE HERE
+    public function update(UpdateGradeRequest $request, Grade $grade)
     {
-        $validated = $request->validate([
-            'school_id' => 'required|exists:schools,id',
-            'name' => 'required|string|max:255',
-        ]);
+        // CHANGE HERE
+        // Validation is handled by UpdateGradeRequest
+        $validated = $request->validated();
 
         try {
+            // CHANGE HERE
             $grade->update($validated);
             toast()->success('Grade updated successfully.')->push();
 
@@ -105,22 +110,24 @@ class GradeController extends Controller
      */
     public function destroy(Grade $grade)
     {
+        // Guard clause to prevent deleting a grade that is not empty
+        if ($grade->students()->exists()) {
+            toast()->danger("Cannot delete '{$grade->name}'. It still contains students.")->push();
+
+            return redirect()->route('grades.index');
+        }
+
         // This is still dangerous because of the Student -> Photos/Orders cascade.
         try {
             // --- Pre-deletion calculation of blast radius ---
             $gradeName = $grade->name;
-            $studentCount = $grade->students()->count();
             // --- End calculation ---
 
             // This will cascade to students, photos, and orders
             $grade->delete();
 
             // Provide specific, contextual feedback
-            if ($studentCount > 0) {
-                toast()->success("Grade '{$gradeName}' deleted. This also deleted {$studentCount} students and all their data (photos, orders).")->push();
-            } else {
-                toast()->success("Grade '{$gradeName}' deleted successfully.")->push();
-            }
+            toast()->success("Grade '{$gradeName}' deleted successfully.")->push();
         } catch (\Exception $e) {
             Log::error("Grade deletion failed (ID: {$grade->id}): ".$e->getMessage());
             toast()->danger('Error deleting grade. Please try again.')->push();

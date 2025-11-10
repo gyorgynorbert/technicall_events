@@ -26,7 +26,11 @@
                 <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     @foreach ($photos as $photo)
                         <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                            <img src="{{ $photo->url }}" alt="{{ $photo->label }}" class="w-full h-64 object-cover">
+                            <x-photo-modal :photo="$photo->url" :label="$photo->label">
+                                <div class="w-full h-64 bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+                                    <img src="{{ $photo->url }}" alt="{{ $photo->label }}" class="max-w-full max-h-full object-contain">
+                                </div>
+                            </x-photo-modal>
                             <div class="p-4 bg-gray-100 dark:bg-gray-800">
                                 <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ $photo->label }}</p>
                             </div>

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Grade;
-use App\Models\Student; // Added for create/edit forms
+use App\Http\Requests\Admin\StoreStudentRequest;
+use App\Http\Requests\Admin\UpdateStudentRequest; // Added for create/edit forms
+// CHANGE HERE
+use App\Models\Grade;  // Import new Form Request
+use App\Models\Student; // Import new Form Request
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log; // Added for logging
 use Illuminate\Support\Str; // Added for Str::random
@@ -36,16 +39,16 @@ class StudentController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    // CHANGE HERE
+    public function store(StoreStudentRequest $request)
     {
-        $validated = $request->validate([
-            'grade_id' => 'required|exists:grades,id',
-            'name' => 'required|string|max:255',
-        ]);
+        // CHANGE HERE
+        // Validation is handled by StoreStudentRequest
+        $validated = $request->validated();
 
-        // Fix for "ensure key is truly unique"
+        // Generate cryptographically secure 32-character access key
         do {
-            $access_key = Str::random(16);
+            $access_key = Str::random(32);
         } while (Student::where('access_key', $access_key)->exists());
 
         $validated['access_key'] = $access_key;
@@ -88,14 +91,15 @@ class StudentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Student $student)
+    // CHANGE HERE
+    public function update(UpdateStudentRequest $request, Student $student)
     {
-        $validated = $request->validate([
-            'grade_id' => 'required|exists:grades,id',
-            'name' => 'required|string|max:255',
-        ]);
+        // CHANGE HERE
+        // Validation is handled by UpdateStudentRequest
+        $validated = $request->validated();
 
         try {
+            // CHANGE HERE
             $student->update($validated);
             toast()->success('Student updated successfully.')->push();
 
@@ -113,20 +117,26 @@ class StudentController extends Controller
      */
     public function destroy(Student $student)
     {
+        // Guard clause to prevent deleting a student with orders
+        if ($student->orders()->exists()) {
+            toast()->danger("Cannot delete '{$student->name}'. It is linked to existing orders.")->push();
+
+            return redirect()->route('students.index');
+        }
+
         // This is dangerous as it deletes photos AND orders (financial data).
         try {
             // --- Pre-deletion calculation of blast radius ---
             $studentName = $student->name;
             $photoCount = $student->photos()->count();
-            $orderCount = $student->orders()->count();
             // --- End calculation ---
 
-            // This will cascade to photos and orders
+            // This will cascade to photos
             $student->delete();
 
             // Provide specific, contextual feedback
-            if ($photoCount > 0 || $orderCount > 0) {
-                toast()->success("Student '{$studentName}' deleted. This also deleted {$photoCount} photos and {$orderCount} orders.")->push();
+            if ($photoCount > 0) {
+                toast()->success("Student '{$studentName}' deleted. This also deleted {$photoCount} photos.")->push();
             } else {
                 toast()->success("Student '{$studentName}' deleted successfully.")->push();
             }

@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('students', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('grade_id')->constrained()->onDelete('restrict');
-            $table->string('name');
-            $table->string('access_key')->unique()->nullable();
-            $table->timestamps();
+        Schema::table('orders', function (Blueprint $table) {
+            // Add index on status column for faster filtering/queries
+            $table->index('status');
         });
     }
 
@@ -25,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('students');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropIndex(['status']);
+        });
     }
 };

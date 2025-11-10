@@ -23,9 +23,12 @@
                             <input id="photo" class="block mt-1 w-full border-gray-300 rounded-md shadow-sm" type="file" name="photo" required>
                             <x-input-error :messages="$errors->get('photo')" class="mt-2" />
                         </div>
-                        <x-primary-button>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
                             {{ __('Upload') }}
-                        </x-primary-button>
+                        </button>
                     </form>
                 </div>
             </div>
@@ -54,11 +57,11 @@
             <div class="p-4">
                 <p class="font-medium text-sm truncate">{{ $photo->label }}</p>
                 
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     x-data=""
                     x-on:click.prevent="$dispatch('open-modal', '{{ $deleteModalId }}')"
-                    class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm"
+                    class="inline-flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-md transition mt-2"
                 >
                     {{ __('Delete') }}
                 </button>

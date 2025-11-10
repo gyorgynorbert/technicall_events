@@ -12,6 +12,13 @@ class StudentSeeder extends Seeder
      */
     public function run(): void
     {
-        Student::factory(100)->create();
+        // Use firstOrCreate with 'access_key' to avoid duplicates on multiple seed runs
+        $students = Student::factory(100)->make();
+        foreach ($students as $student) {
+            Student::firstOrCreate(
+                ['access_key' => $student->access_key],
+                $student->toArray()
+            );
+        }
     }
 }

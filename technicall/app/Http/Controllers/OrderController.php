@@ -36,19 +36,51 @@ class OrderController extends Controller
         $cart = session('cart');
         if (empty($cart)) {
             return redirect()->route('order.show', ['access_key' => session('student_access_key', '')])
-                ->withErrors(['products' => 'Your session expired. Please start over.']);
+                ->withErrors(['products' => 'A munkamenet lejárt. Kérjük, kezdje újra a rendelést.']);
         }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
-            'phone_number' => 'required|string|regex:/^0\d{9}$/',
+            'phone_number' => ['required', 'string', 'regex:/^0\d{9}$/'],
+        ], [
+            'name.required' => 'Kérjük, adja meg a nevét.',
+            'email.required' => 'Kérjük, adja meg az email címét.',
+            'email.email' => 'Kérjük, érvényes email címet adjon meg.',
+            'phone_number.required' => 'Kérjük, adja meg a telefonszámát.',
+            'phone_number.regex' => 'A telefonszám formátuma nem megfelelő. Példa: 0712345678',
         ]);
 
         // Find the student
         $student = Student::find($cart['student_id']);
         if (! $student) {
-            return back()->withInput()->withErrors(['cart' => 'Student not found.']);
+            return back()->withInput()->withErrors(['cart' => 'Érvénytelen diák adatok. Kérjük, kezdje újra a rendelést.']);
+        }
+
+        // SECURITY: Recalculate total price from database to prevent price manipulation
+        $productIds = collect($cart['items'])->pluck('product_id')->unique();
+        $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+
+        $actualTotalPrice = 0;
+        $orderItemsData = [];
+
+        foreach ($cart['items'] as $item) {
+            $product = $products->get($item['product_id']);
+
+            if (!$product) {
+                return back()->withInput()->withErrors(['cart' => 'Érvénytelen termék a kosárban. Kérjük, kezdje újra a rendelést.']);
+            }
+
+            // Use ACTUAL price from database, not session
+            $actualPrice = $product->price;
+            $actualTotalPrice += $actualPrice * $item['quantity'];
+
+            $orderItemsData[] = [
+                'product_id' => $item['product_id'],
+                'photo_id' => $item['photo_id'],
+                'quantity' => $item['quantity'],
+                'price_at_purchase' => $actualPrice, // Use database price
+            ];
         }
 
         // 3. Use a Database Transaction to save everything
@@ -57,24 +89,12 @@ class OrderController extends Controller
 
             $order = Order::create([
                 'student_id' => $student->id,
-                // Add the new fields to the fillable array in Order model
                 'parent_name' => $validated['name'],
                 'parent_email' => $validated['email'],
                 'parent_phone_number' => $validated['phone_number'],
-                'total_price' => $cart['total_price'],
+                'total_price' => $actualTotalPrice, // Use recalculated price
                 'status' => 'pending',
             ]);
-
-            // Prepare the order items from the cart data
-            $orderItemsData = [];
-            foreach ($cart['items'] as $item) {
-                $orderItemsData[] = [
-                    'product_id' => $item['product_id'],
-                    'photo_id' => $item['photo_id'],
-                    'quantity' => $item['quantity'],
-                    'price_at_purchase' => $item['price'],
-                ];
-            }
 
             $order->orderItems()->createMany($orderItemsData);
 
@@ -84,15 +104,23 @@ class OrderController extends Controller
             DB::rollBack();
             Log::error('Order creation failed: '.$e->getMessage());
 
-            return back()->withInput()->withErrors(['cart' => 'Could not save your order. Please try again.']);
+            return back()->withInput()->withErrors(['cart' => 'Nem sikerült elmenteni a rendelést. Kérjük, próbálja újra.']);
         }
 
-        $admin = User::where('is_admin', true)->first();
-        if ($admin) {
-            Mail::to($admin)->send(new OrderReceived($order->load('student', 'orderItems.product', 'orderItems.photo')));
+        // 6. Send email notification to admin (don't fail order if email fails)
+        try {
+            $admin = User::where('is_admin', true)->first();
+            if ($admin) {
+                Mail::to($admin)->send(new OrderReceived($order->load('student', 'orderItems.product', 'orderItems.photo')));
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send order notification email: ' . $e->getMessage(), [
+                'order_id' => $order->id,
+            ]);
+            // Don't fail the order, just log the error
         }
 
-        // 6. Clear the cart and redirect
+        // 7. Clear the cart and redirect
         session()->forget('cart');
         session()->forget('student_access_key');
 
@@ -111,7 +139,7 @@ class OrderController extends Controller
 
         if (empty($cart) || empty($cart['items'])) {
             return redirect()->route('order.show', ['access_key' => session('student_access_key', 'missing')])
-                ->withErrors(['products' => 'Your cart is empty.']);
+                ->withErrors(['products' => 'A kosár üres. Kérjük, válasszon termékeket.']);
         }
 
         return view('public.checkout', compact('cart'));
@@ -124,7 +152,12 @@ class OrderController extends Controller
             'products' => 'required|array|min:1',
             'products.*.photo' => 'required|array',
             'products.*.quantity' => 'required|array',
-            'student_id' => 'required|exists:students,id', // We'll add this to the form
+            'student_id' => 'required|exists:students,id',
+        ], [
+            'products.required' => 'Kérjük, válasszon legalább egy terméket.',
+            'products.min' => 'Kérjük, válasszon legalább egy terméket.',
+            'student_id.required' => 'Érvénytelen diák azonosító.',
+            'student_id.exists' => 'A diák nem található.',
         ]);
 
         // Find all the products and photos at once
@@ -148,7 +181,7 @@ class OrderController extends Controller
 
                 // Validate the photo belongs to the student
                 if (! $studentPhotoIds->contains($photo_id)) {
-                    return back()->withInput()->withErrors(['products' => 'Invalid photo selected.']);
+                    return back()->withInput()->withErrors(['products' => 'Érvénytelen kép került kiválasztásra.']);
                 }
 
                 // Get the actual photo model for its URL and label
@@ -169,7 +202,7 @@ class OrderController extends Controller
         }
 
         if (empty($cartItems)) {
-            return back()->withInput()->withErrors(['products' => 'You must order at least one item.']);
+            return back()->withInput()->withErrors(['products' => 'Legalább egy terméket meg kell rendelnie mennyiséggel.']);
         }
 
         session([

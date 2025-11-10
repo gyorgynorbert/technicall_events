@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Event;
-use App\Models\School; // Added for create/edit forms
+use App\Http\Requests\Admin\StoreEventRequest;
+use App\Http\Requests\Admin\UpdateEventRequest; // Added for create/edit forms
+// CHANGE HERE
+use App\Models\Event;  // Import new Form Request
+use App\Models\School; // Import new Form Request
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // Added for transactions
 use Illuminate\Support\Facades\Log; // Added for logging
@@ -36,16 +39,12 @@ class EventController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    // CHANGE HERE
+    public function store(StoreEventRequest $request)
     {
-        // Correct validation rules from your form
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'event_date' => 'required|date',
-            'description' => 'nullable|string',
-            'school_ids' => 'nullable|array', // Validate the array
-            'school_ids.*' => 'exists:schools,id', // Validate each ID in the array
-        ]);
+        // CHANGE HERE
+        // Validation is already handled by StoreEventRequest
+        $validated = $request->validated();
 
         try {
             DB::transaction(function () use ($validated) {
@@ -99,16 +98,12 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Event $event)
+    // CHANGE HERE
+    public function update(UpdateEventRequest $request, Event $event)
     {
-        // Same validation as store
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'event_date' => 'required|date',
-            'description' => 'nullable|string',
-            'school_ids' => 'nullable|array',
-            'school_ids.*' => 'exists:schools,id',
-        ]);
+        // CHANGE HERE
+        // Validation is already handled by UpdateEventRequest
+        $validated = $request->validated();
 
         try {
             DB::transaction(function () use ($event, $validated) {
@@ -121,6 +116,7 @@ class EventController extends Controller
 
                 // 2. Sync the schools
                 // If school_ids is empty or null, sync([]) will detach all schools.
+                // CHANGE HERE
                 $schoolIds = $validated['school_ids'] ?? [];
                 $event->schools()->sync($schoolIds);
             });
