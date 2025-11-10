@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -27,6 +27,22 @@ class StoreCartRequest extends FormRequest
             'products.*.photo' => 'required|array',
             'products.*.quantity' => 'required|array',
             'student_id' => 'required|exists:students,id',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'products.required' => 'Kérjük, válasszon legalább egy terméket.',
+            'products.array' => 'A termékek listája érvénytelen.',
+            'products.min' => 'Kérjük, válasszon legalább egy terméket.',
+            'student_id.required' => 'Érvénytelen diák azonosító.',
+            'student_id.exists' => 'A diák nem található.',
         ];
     }
 }

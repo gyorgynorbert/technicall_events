@@ -22,8 +22,25 @@ class StorePhotoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
             'label' => 'nullable|string|max:255',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'photo.required' => 'Please select a photo to upload.',
+            'photo.image' => 'The file must be a valid image.',
+            'photo.mimes' => 'Only JPEG and PNG images are allowed.',
+            'photo.max' => 'The photo must not exceed 5MB in size.',
+            'label.string' => 'The label must be a text string.',
+            'label.max' => 'The label must not exceed 255 characters.',
         ];
     }
 }

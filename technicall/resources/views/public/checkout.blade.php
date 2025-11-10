@@ -21,7 +21,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('order.submit') }}" method="POST" class="max-w-7xl mx-auto">
+            <form action="{{ route('order.submit') }}" method="POST" class="max-w-7xl mx-auto" id="checkoutForm" novalidate>
                 @csrf
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -34,20 +34,55 @@
                             <div class="space-y-6">
                                 <div>
                                     <x-input-label for="name" :value="__('Név (Name)')" />
-                                    <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required />
-                                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                                    <x-text-input
+                                        id="name"
+                                        class="block mt-1 w-full"
+                                        type="text"
+                                        name="name"
+                                        :value="old('name')"
+                                        minlength="2"
+                                        maxlength="255"
+                                        required
+                                        aria-required="true"
+                                        aria-describedby="nameError"
+                                    />
+                                    <x-input-error :messages="$errors->get('name')" class="mt-2" id="nameError" />
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Legalább 2 karakter szükséges</p>
                                 </div>
 
                                 <div>
                                     <x-input-label for="email" :value="__('Email Cím')" />
-                                    <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required />
-                                    <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                                    <x-text-input
+                                        id="email"
+                                        class="block mt-1 w-full"
+                                        type="email"
+                                        name="email"
+                                        :value="old('email')"
+                                        maxlength="255"
+                                        required
+                                        aria-required="true"
+                                        aria-describedby="emailError"
+                                    />
+                                    <x-input-error :messages="$errors->get('email')" class="mt-2" id="emailError" />
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Érvényes email cím szükséges (pl: nev@pelda.com)</p>
                                 </div>
 
                                 <div>
                                     <x-input-label for="phone_number" :value="__('Telefonszám')" />
-                                    <x-text-input id="phone_number" class="block mt-1 w-full" type="tel" name="phone_number" :value="old('phone_number')" placeholder="0712345678" pattern="^0\d{9}$" required />
-                                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
+                                    <x-text-input
+                                        id="phone_number"
+                                        class="block mt-1 w-full"
+                                        type="tel"
+                                        name="phone_number"
+                                        :value="old('phone_number')"
+                                        placeholder="0712345678"
+                                        pattern="^0\d{9}$"
+                                        inputmode="numeric"
+                                        required
+                                        aria-required="true"
+                                        aria-describedby="phoneError"
+                                    />
+                                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2" id="phoneError" />
                                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Formátum: 0712345678 (10 számjegy, 0-val kezdve)</p>
                                 </div>
                             </div>
@@ -113,4 +148,66 @@
 
         </div>
     </div>
+
+    <script>
+        // Enhanced form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('checkoutForm');
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const phoneInput = document.getElementById('phone_number');
+
+            // Real-time validation with visual feedback
+            function validateField(field) {
+                const fieldGroup = field.closest('div');
+                const errorDiv = fieldGroup.querySelector('[id$="Error"]');
+
+                if (!field.checkValidity()) {
+                    field.classList.add('border-red-500');
+                    field.classList.remove('border-green-500');
+                    if (errorDiv) {
+                        errorDiv.style.display = 'block';
+                    }
+                } else {
+                    field.classList.remove('border-red-500');
+                    field.classList.add('border-green-500');
+                    if (errorDiv && !errorDiv.textContent.trim()) {
+                        errorDiv.style.display = 'none';
+                    }
+                }
+            }
+
+            // Add event listeners for real-time validation
+            nameInput.addEventListener('blur', () => validateField(nameInput));
+            emailInput.addEventListener('blur', () => validateField(emailInput));
+            phoneInput.addEventListener('blur', () => validateField(phoneInput));
+
+            // Prevent form submission if invalid
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+
+                // Check all required fields
+                if (!nameInput.checkValidity()) {
+                    validateField(nameInput);
+                    isValid = false;
+                }
+                if (!emailInput.checkValidity()) {
+                    validateField(emailInput);
+                    isValid = false;
+                }
+                if (!phoneInput.checkValidity()) {
+                    validateField(phoneInput);
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    e.preventDefault();
+                    // Focus on first invalid field
+                    if (!nameInput.checkValidity()) nameInput.focus();
+                    else if (!emailInput.checkValidity()) emailInput.focus();
+                    else if (!phoneInput.checkValidity()) phoneInput.focus();
+                }
+            });
+        });
+    </script>
 </x-public-layout>

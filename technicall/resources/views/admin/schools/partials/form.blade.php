@@ -26,27 +26,28 @@
 
 <div class="mt-4">
     <x-input-label for="event_ids" :value="__('Assign to Events (Optional)')" />
-    <select
-        name="event_ids[]"
-        id="event_ids"
-        multiple
-        class="block w-full h-48 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-    >
+    <div class="mt-2 p-4 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 max-h-60 overflow-y-auto">
         @isset($events)
-            @foreach($events as $event)
-                <option
-                    value="{{ $event->id }}"
-                    @if(old('event_ids') ? in_array($event->id, old('event_ids')) : (isset($school) && $school->events->contains($event->id)))
-                        selected
-                    @endif
-                >
-                    {{ $event->name }} ({{ $event->event_date->format('Y-m-d') }})
-                </option>
-            @endforeach
+            @forelse($events as $event)
+                <label class="flex items-center py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 rounded">
+                    <input
+                        type="checkbox"
+                        name="event_ids[]"
+                        value="{{ $event->id }}"
+                        @if(old('event_ids') ? in_array($event->id, old('event_ids')) : (isset($school) && $school->events->contains($event->id)))
+                            checked
+                        @endif
+                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                    >
+                    <span class="ml-2 text-sm text-gray-900 dark:text-gray-100">{{ $event->name }} ({{ $event->event_date->format('Y-m-d') }})</span>
+                </label>
+            @empty
+                <p class="text-sm text-gray-500 dark:text-gray-400">No events available</p>
+            @endforelse
         @endisset
-    </select>
+    </div>
     <x-input-error :messages="$errors->get('event_ids')" class="mt-2" />
-    <x-input-error :messages="$errors->get('event_ids.*')" class_="mt-2" />
+    <x-input-error :messages="$errors->get('event_ids.*')" class="mt-2" />
 </div>
 
 

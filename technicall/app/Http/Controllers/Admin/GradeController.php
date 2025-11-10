@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreGradeRequest;
-use App\Http\Requests\Admin\UpdateGradeRequest; // Added for create/edit forms
-// CHANGE HERE
-use App\Models\Grade;  // Import new Form Request
-use App\Models\School; // Import new Form Request
+use App\Http\Requests\Admin\UpdateGradeRequest;
+use App\Models\Grade;
+use App\Models\School;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log; // Added for logging
+use Illuminate\Support\Facades\Log;
 
 class GradeController extends Controller
 {
@@ -38,15 +37,11 @@ class GradeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    // CHANGE HERE
     public function store(StoreGradeRequest $request)
     {
-        // CHANGE HERE
-        // Validation is handled by StoreGradeRequest
         $validated = $request->validated();
 
         try {
-            // CHANGE HERE
             Grade::create($validated);
             toast()->success('Grade created successfully.')->push();
 
@@ -84,15 +79,11 @@ class GradeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    // CHANGE HERE
     public function update(UpdateGradeRequest $request, Grade $grade)
     {
-        // CHANGE HERE
-        // Validation is handled by UpdateGradeRequest
         $validated = $request->validated();
 
         try {
-            // CHANGE HERE
             $grade->update($validated);
             toast()->success('Grade updated successfully.')->push();
 

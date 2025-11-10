@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\StoreCartRequest;
+use App\Http\Requests\Admin\StoreOrderRequest;
 use App\Mail\OrderReceived;
 use App\Models\Order;
 use App\Models\Photo;
@@ -31,7 +33,7 @@ class OrderController extends Controller
         return view('public.order-form', compact('student', 'photos', 'products'));
     }
 
-    public function storeOrder(Request $request)
+    public function storeOrder(StoreOrderRequest $request)
     {
         $cart = session('cart');
         if (empty($cart)) {
@@ -39,17 +41,7 @@ class OrderController extends Controller
                 ->withErrors(['products' => 'A munkamenet lejárt. Kérjük, kezdje újra a rendelést.']);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone_number' => ['required', 'string', 'regex:/^0\d{9}$/'],
-        ], [
-            'name.required' => 'Kérjük, adja meg a nevét.',
-            'email.required' => 'Kérjük, adja meg az email címét.',
-            'email.email' => 'Kérjük, érvényes email címet adjon meg.',
-            'phone_number.required' => 'Kérjük, adja meg a telefonszámát.',
-            'phone_number.regex' => 'A telefonszám formátuma nem megfelelő. Példa: 0712345678',
-        ]);
+        $validated = $request->validated();
 
         // Find the student
         $student = Student::find($cart['student_id']);
@@ -129,12 +121,6 @@ class OrderController extends Controller
 
     public function checkout()
     {
-        \Log::info('Checkout accessed', [
-            'has_cart' => session()->has('cart'),
-            'cart' => session('cart'),
-            'access_key' => session('student_access_key'),
-        ]);
-
         $cart = session('cart');
 
         if (empty($cart) || empty($cart['items'])) {
@@ -145,20 +131,10 @@ class OrderController extends Controller
         return view('public.checkout', compact('cart'));
     }
 
-    public function storeCart(Request $request)
+    public function storeCart(StoreCartRequest $request)
     {
-        // 1. Validate the incoming data
-        $validated = $request->validate([
-            'products' => 'required|array|min:1',
-            'products.*.photo' => 'required|array',
-            'products.*.quantity' => 'required|array',
-            'student_id' => 'required|exists:students,id',
-        ], [
-            'products.required' => 'Kérjük, válasszon legalább egy terméket.',
-            'products.min' => 'Kérjük, válasszon legalább egy terméket.',
-            'student_id.required' => 'Érvénytelen diák azonosító.',
-            'student_id.exists' => 'A diák nem található.',
-        ]);
+        // 1. Get validated data
+        $validated = $request->validated();
 
         // Find all the products and photos at once
         $allProducts = Product::find(array_keys($validated['products']));

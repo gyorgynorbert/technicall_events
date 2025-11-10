@@ -1,22 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 {{ __('Orders') }}
             </h2>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <button onclick="document.getElementById('exportForm').format.value='xlsx'; document.getElementById('exportForm').submit();"
-                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow-sm transition">
                     Export XLSX
                 </button>
                 <button onclick="document.getElementById('exportForm').format.value='csv'; document.getElementById('exportForm').submit();"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition">
                     Export CSV
                 </button>
             </div>
@@ -36,15 +30,28 @@
                             </svg>
                             Filter Orders
                         </h3>
-                        @if(request()->hasAny(['school_id', 'grade_id', 'status']))
+                        @if(request()->filled('search') || request()->filled('school_id') || request()->filled('grade_id') || request()->filled('status'))
                             <a href="{{ route('orders.index') }}"
                                class="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300">
-                                Clear Filters
+                                Clear All
                             </a>
                         @endif
                     </div>
 
                     <form method="GET" action="{{ route('orders.index') }}" class="space-y-4">
+                        {{-- Search Box --}}
+                        <div class="mb-4">
+                            <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Search by Parent Name or Email
+                            </label>
+                            <div class="flex">
+                                <input type="text" name="search" id="search"
+                                       value="{{ request('search') }}"
+                                       placeholder="Enter parent name or email..."
+                                       class="block w-full rounded-l-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             {{-- School Filter --}}
                             <div>
@@ -107,25 +114,42 @@
                     </form>
 
                     {{-- Active Filters Display --}}
-                    @if(request()->hasAny(['school_id', 'grade_id', 'status']))
+                    @if(request()->filled('search') || request()->filled('school_id') || request()->filled('grade_id') || request()->filled('status'))
                         <div class="mt-4 flex flex-wrap gap-2">
                             <span class="text-sm text-gray-600 dark:text-gray-400">Active filters:</span>
-                            @if(request('school_id'))
+                            @if(request()->filled('search'))
+                                <a href="{{ route('orders.index', array_filter(request()->except('search'))) }}" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition cursor-pointer">
+                                    Search: "{{ request('search') }}"
+                                    <svg class="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </a>
+                            @endif
+                            @if(request()->filled('school_id'))
                                 @php $selectedSchool = $schools->find(request('school_id')); @endphp
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                <a href="{{ route('orders.index', array_filter(request()->except('school_id'))) }}" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-800 transition cursor-pointer">
                                     School: {{ $selectedSchool->name ?? 'Unknown' }}
-                                </span>
+                                    <svg class="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </a>
                             @endif
-                            @if(request('grade_id'))
+                            @if(request()->filled('grade_id'))
                                 @php $selectedGrade = $grades->find(request('grade_id')); @endphp
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                <a href="{{ route('orders.index', array_filter(request()->except('grade_id'))) }}" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 transition cursor-pointer">
                                     Grade: {{ $selectedGrade->name ?? 'Unknown' }}
-                                </span>
+                                    <svg class="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </a>
                             @endif
-                            @if(request('status'))
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            @if(request()->filled('status'))
+                                <a href="{{ route('orders.index', array_filter(request()->except('status'))) }}" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 transition cursor-pointer">
                                     Status: {{ ucfirst(request('status')) }}
-                                </span>
+                                    <svg class="ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </a>
                             @endif
                         </div>
                     @endif
@@ -135,13 +159,15 @@
             {{-- Orders Table --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <div class="overflow-x-auto">
+                    {{-- Desktop Table View (hidden on mobile) --}}
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
+                        <thead class="border-b border-gray-200 dark:border-gray-700">
                             <tr>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order ID</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parent Phone</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parent Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parent Email</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
@@ -156,7 +182,8 @@
                                             #{{ $order->id }}
                                         </a>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->student->name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->parent_name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->parent_email }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->parent_phone_number }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ number_format($order->total_price, 2) }} RON</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -173,22 +200,77 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $order->created_at->format('Y-m-d H:i') }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <a href="{{ route('orders.show', $order) }}"
-                                           class="inline-flex items-center px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-md transition">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
+                                           class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-md transition">
                                             View
                                         </a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">No orders found.</td>
+                                    <td colspan="8" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">No orders found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
+                    </div>
+
+                    {{-- Mobile Card View (visible only on mobile) --}}
+                    <div class="md:hidden space-y-4">
+                        @forelse ($orders as $order)
+                            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <a href="{{ route('orders.show', $order) }}" class="text-lg font-semibold text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">
+                                            Order #{{ $order->id }}
+                                        </a>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            {{ $order->created_at->format('Y-m-d H:i') }}
+                                        </p>
+                                    </div>
+                                    <span @class([
+                                        'px-2 py-1 text-xs font-semibold rounded-full',
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' => $order->status == 'pending',
+                                        'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' => $order->status == 'processing',
+                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' => $order->status == 'completed',
+                                        'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' => $order->status == 'cancelled',
+                                    ])>
+                                        {{ ucfirst($order->status) }}
+                                    </span>
+                                </div>
+
+                                <div class="space-y-2 text-sm">
+                                    <div>
+                                        <p class="text-gray-500 dark:text-gray-400">Parent Name</p>
+                                        <p class="font-medium text-gray-900 dark:text-gray-100">{{ $order->parent_name }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 dark:text-gray-400">Email</p>
+                                        <p class="font-medium text-gray-900 dark:text-gray-100 text-xs break-all">{{ $order->parent_email }}</p>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p class="text-gray-500 dark:text-gray-400">Phone</p>
+                                            <p class="font-medium text-gray-900 dark:text-gray-100">{{ $order->parent_phone_number }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-gray-500 dark:text-gray-400">Total</p>
+                                            <p class="font-medium text-gray-900 dark:text-gray-100">{{ number_format($order->total_price, 2) }} RON</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4 border-t border-gray-200 dark:border-gray-600">
+                                    <a href="{{ route('orders.show', $order) }}"
+                                       class="inline-flex items-center justify-center w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                                No orders found.
+                            </div>
+                        @endforelse
                     </div>
 
                     <div class="mt-6">

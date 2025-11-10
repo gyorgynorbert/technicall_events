@@ -4,67 +4,99 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\School;
 use App\Models\Student;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log; // Added for date queries
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
     /**
      * Handle the incoming request.
      */
-    public function __invoke(Request $request) // Or public function index(Request $request)
+    public function __invoke(Request $request)
     {
         // Set default values in case queries fail
         $totalRevenue = 0;
         $totalOrders = 0;
         $totalStudents = 0;
         $totalSchools = 0;
-        $newOrders = 0; // <-- ADD THIS DEFAULT
-        $recentOrders = collect(); // <-- ADD THIS DEFAULT
+        $newOrders = 0;
+        $recentOrders = collect();
+        $weekRevenue = 0;
+        $monthRevenue = 0;
+        $completedOrders = 0;
+        $pendingOrders = 0;
+        $processingOrders = 0;
+        $averageOrderValue = 0;
+        $topProduct = null;
+        $studentWithMostOrders = null;
 
         try {
-            // Calculate total revenue from all orders
+            // Timeline calculations
+            $oneWeekAgo = Carbon::now()->subDays(7);
+            $oneMonthAgo = Carbon::now()->subDays(30);
+
+            // Core metrics
             $totalRevenue = Order::sum('total_price');
-            // Count all orders
             $totalOrders = Order::count();
-            // Count all students
             $totalStudents = Student::count();
-            // Count all schools
             $totalSchools = School::count();
 
-            // --- ADDED THESE QUERIES ---
-            $oneWeekAgo = Carbon::now()->subDays(7);
-
-            // Get count of new orders
+            // Time-based metrics
             $newOrders = Order::where('created_at', '>=', $oneWeekAgo)->count();
+            $weekRevenue = Order::where('created_at', '>=', $oneWeekAgo)->sum('total_price');
+            $monthRevenue = Order::where('created_at', '>=', $oneMonthAgo)->sum('total_price');
 
-            // Get the 5 most recent orders for the list
-            $recentOrders = Order::with('student')
+            // Status breakdown
+            $completedOrders = Order::where('status', 'completed')->count();
+            $pendingOrders = Order::where('status', 'pending')->count();
+            $processingOrders = Order::where('status', 'processing')->count();
+
+            // Average order value
+            $averageOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+
+            // Top product
+            $topProduct = Product::withCount('orderItems')
+                ->orderBy('order_items_count', 'desc')
+                ->first();
+
+            // Student with most orders
+            $studentWithMostOrders = Student::withCount('orders')
+                ->orderBy('orders_count', 'desc')
+                ->first();
+
+            // Recent orders with student details
+            $recentOrders = Order::with(['student' => function ($query) {
+                $query->with('grade.school');
+            }])
                 ->orderBy('created_at', 'desc')
-                ->limit(5)
+                ->limit(10)
                 ->get();
-            // --- END ADDED QUERIES ---
 
         } catch (\Exception $e) {
-            // Log the real error
             Log::error('Dashboard statistics failed to load: '.$e->getMessage());
-
-            // Inform the admin, but don't crash the page.
             toast()->danger('Could not load dashboard statistics. (Database Error)')->push();
         }
 
-        // The view is always returned, even if queries fail,
-        // passing either the real data or the default values.
         return view('dashboard', [
             'totalRevenue' => $totalRevenue,
             'totalOrders' => $totalOrders,
             'totalStudents' => $totalStudents,
             'totalSchools' => $totalSchools,
-            'newOrders' => $newOrders,       // <-- PASS THE VARIABLE
-            'recentOrders' => $recentOrders, // <-- PASS THE VARIABLE (I assume the view needs this too)
+            'newOrders' => $newOrders,
+            'recentOrders' => $recentOrders,
+            'weekRevenue' => $weekRevenue,
+            'monthRevenue' => $monthRevenue,
+            'completedOrders' => $completedOrders,
+            'pendingOrders' => $pendingOrders,
+            'processingOrders' => $processingOrders,
+            'averageOrderValue' => $averageOrderValue,
+            'topProduct' => $topProduct,
+            'studentWithMostOrders' => $studentWithMostOrders,
         ]);
     }
 }

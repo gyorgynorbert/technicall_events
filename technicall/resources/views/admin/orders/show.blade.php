@@ -34,10 +34,10 @@
                             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Order Items</h3>
                             <div class="mt-6 space-y-6">
                                 @foreach($order->orderItems as $item)
-                                    <div class="flex items-center space-x-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                                         <x-photo-modal :photo="$item->photo->url" :label="$item->photo->label">
                                             <img src="{{ $item->photo->url }}" alt="{{ $item->photo->label }}"
-                                                 class="w-24 h-24 rounded-md object-cover shadow">
+                                                 class="w-full sm:w-24 h-48 sm:h-24 rounded-md object-cover shadow">
                                         </x-photo-modal>
 
                                         <div class="flex-1">
@@ -45,8 +45,8 @@
                                             <p class="text-sm text-gray-600 dark:text-gray-400"><strong>Photo:</strong> {{ $item->photo->label }}</p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400"><strong>SKU:</strong> {{ $item->product->code }}</p>
                                         </div>
-                                        
-                                        <div class="text-right text-gray-700 dark:text-gray-300">
+
+                                        <div class="text-left sm:text-right text-gray-700 dark:text-gray-300">
                                             <p>{{ number_format($item->price_at_purchase, 2) }} RON &times; {{ $item->quantity }}</p>
                                             <p class="font-bold text-gray-900 dark:text-gray-100">{{ number_format($item->price_at_purchase * $item->quantity, 2) }} RON</p>
                                         </div>
@@ -69,7 +69,7 @@
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6">
                             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Actions</h3>
-                            <div class="mt-4 flex flex-wrap gap-2">
+                            <div class="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
                                 @php
                                     $statuses = [
                                         App\Models\Order::STATUS_PENDING,
@@ -84,12 +84,12 @@
                                             $statusModalId = 'statusModal-' . $order->id . '-' . $status;
                                         @endphp
                                         
-                                        <button 
+                                        <button
                                             type="button"
                                             x-data=""
                                             x-on:click.prevent="$dispatch('open-modal', '{{ $statusModalId }}')"
                                             @class([
-                                                'inline-flex items-center px-3 py-1 rounded-md text-xs font-medium transition',
+                                                'inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition w-full sm:w-auto',
                                                 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-700' => $status === App\Models\Order::STATUS_PENDING,
                                                 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-700' => $status === App\Models\Order::STATUS_PROCESSING,
                                                 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-700' => $status === App\Models\Order::STATUS_COMPLETED,

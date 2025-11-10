@@ -4,23 +4,29 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreStudentRequest;
-use App\Http\Requests\Admin\UpdateStudentRequest; // Added for create/edit forms
-// CHANGE HERE
-use App\Models\Grade;  // Import new Form Request
-use App\Models\Student; // Import new Form Request
+use App\Http\Requests\Admin\UpdateStudentRequest;
+use App\Models\Grade;
+use App\Models\Student;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log; // Added for logging
-use Illuminate\Support\Str; // Added for Str::random
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class StudentController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // This query is already perfect.
-        $students = Student::with('grade.school')->withCount('photos')->paginate(10);
+        $query = Student::with('grade.school')->withCount('photos');
+
+        // Apply search filter if provided
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $students = $query->paginate(10)->appends($request->query());
 
         return view('admin.students.index', compact('students'));
     }
@@ -39,11 +45,8 @@ class StudentController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    // CHANGE HERE
     public function store(StoreStudentRequest $request)
     {
-        // CHANGE HERE
-        // Validation is handled by StoreStudentRequest
         $validated = $request->validated();
 
         // Generate cryptographically secure 32-character access key
@@ -91,15 +94,11 @@ class StudentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    // CHANGE HERE
     public function update(UpdateStudentRequest $request, Student $student)
     {
-        // CHANGE HERE
-        // Validation is handled by UpdateStudentRequest
         $validated = $request->validated();
 
         try {
-            // CHANGE HERE
             $student->update($validated);
             toast()->success('Student updated successfully.')->push();
 

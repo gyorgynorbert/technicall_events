@@ -4,13 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreSchoolRequest;
-use App\Http\Requests\Admin\UpdateSchoolRequest;     // Added for create/edit forms
-// CHANGE HERE
-use App\Models\Event;  // Import new Form Request
-use App\Models\School; // Import new Form Request
+use App\Http\Requests\Admin\UpdateSchoolRequest;
+use App\Models\Event;
+use App\Models\School;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;   // Added for transactions
-use Illuminate\Support\Facades\Log;  // Added for logging
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SchoolController extends Controller
 {
@@ -39,11 +38,8 @@ class SchoolController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    // CHANGE HERE
     public function store(StoreSchoolRequest $request)
     {
-        // CHANGE HERE
-        // Validation is handled by StoreSchoolRequest
         $validated = $request->validated();
 
         try {
@@ -64,8 +60,7 @@ class SchoolController extends Controller
 
             return redirect()->route('schools.index');
         } catch (\Exception $e) {
-            // CHANGE HERE
-            Log::error('School creation failed: '.$e->getMessage()); // Corrected logging
+            Log::error('School creation failed: '.$e->getMessage());
             toast()->danger('Error creating school. Please try again.')->push();
 
             return back()->withInput();
@@ -99,11 +94,8 @@ class SchoolController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    // CHANGE HERE
     public function update(UpdateSchoolRequest $request, School $school)
     {
-        // CHANGE HERE
-        // Validation is handled by UpdateSchoolRequest
         $validated = $request->validated();
 
         try {
@@ -115,7 +107,6 @@ class SchoolController extends Controller
                 ]);
 
                 // 2. Sync the Events
-                // CHANGE HERE
                 $eventIds = $validated['event_ids'] ?? [];
                 $school->events()->sync($eventIds);
             });

@@ -22,6 +22,15 @@ class OrderController extends Controller
     {
         $query = Order::with('student.grade.school')->orderBy('created_at', 'desc');
 
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('parent_name', 'like', "%{$search}%")
+                  ->orWhere('parent_email', 'like', "%{$search}%");
+            });
+        }
+
         // Apply filters if provided
         if ($request->filled('school_id')) {
             $query->whereHas('student.grade.school', function ($q) use ($request) {
@@ -41,9 +50,29 @@ class OrderController extends Controller
 
         $orders = $query->paginate(10)->appends($request->query());
 
-        // Get schools and grades for filter dropdowns
-        $schools = School::orderBy('name')->get();
-        $grades = Grade::with('school')->orderBy('name')->get();
+        // Get unique schools that have orders - prevent showing schools with no orders
+        $schoolIds = Order::with('student.grade.school')
+            ->get()
+            ->pluck('student.grade.school.id')
+            ->filter()
+            ->unique();
+
+        $schools = School::whereIn('id', $schoolIds)
+            ->orderBy('name')
+            ->get();
+
+        // Get unique grades that have orders - prevent duplication
+        $gradeIds = Order::distinct()->pluck('student_id')
+            ->map(function ($studentId) {
+                return \App\Models\Student::find($studentId)?->grade_id;
+            })
+            ->filter()
+            ->unique();
+
+        $grades = Grade::with('school')
+            ->whereIn('id', $gradeIds)
+            ->orderBy('name')
+            ->get();
 
         return view('admin.orders.index', compact('orders', 'schools', 'grades'));
     }
@@ -53,8 +82,8 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        // This eager-load is perfect
-        $order->load('student.grade.school', 'orderitems.product');
+        // Eager load all necessary relationships to prevent N+1 queries
+        $order->load('student.grade.school', 'orderItems.product', 'orderItems.photo');
 
         return view('admin.orders.show', compact('order'));
     }
@@ -78,7 +107,6 @@ class OrderController extends Controller
             ],
         ]);
 
-        // CHANGE HERE
         try {
             // 2. Update the order's status
             $order->update([
@@ -87,8 +115,6 @@ class OrderController extends Controller
 
             // 3. Give success feedback
             toast()->success('Order status updated successfully.')->push();
-
-            // CHANGE HERE
         } catch (\Exception $e) {
             // 4. Catch any DB errors
             Log::error("Order update failed (ID: {$order->id}): ".$e->getMessage());

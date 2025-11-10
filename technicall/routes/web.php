@@ -33,10 +33,6 @@ Route::get('/order/{access_key}', [OrderController::class, 'show'])
     ->middleware('throttle:public-orders')
     ->name('order.show');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified', 'admin'])->name('dashboard');
-
 Route::middleware(['auth', 'admin', 'verified', 'throttle:admin'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('events', EventController::class);

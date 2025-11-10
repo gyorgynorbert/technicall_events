@@ -38,25 +38,26 @@
 
 <div class="mt-4">
     <x-input-label for="school_ids" :value="__('Assign to Schools (Optional)')" />
-    <select
-        name="school_ids[]"
-        id="school_ids"
-        multiple
-        class="block w-full h-48 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-    >
+    <div class="mt-2 p-4 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 max-h-60 overflow-y-auto">
         @isset($schools)
-            @foreach($schools as $school)
-                <option
-                    value="{{ $school->id }}"
-                    @if(old('school_ids') ? in_array($school->id, old('school_ids')) : (isset($event) && $event->schools->contains($school->id)))
-                        selected
-                    @endif
-                >
-                    {{ $school->name }}
-                </option>
-            @endforeach
+            @forelse($schools as $school)
+                <label class="flex items-center py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 px-2 rounded">
+                    <input
+                        type="checkbox"
+                        name="school_ids[]"
+                        value="{{ $school->id }}"
+                        @if(old('school_ids') ? in_array($school->id, old('school_ids')) : (isset($event) && $event->schools->contains($school->id)))
+                            checked
+                        @endif
+                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                    >
+                    <span class="ml-2 text-sm text-gray-900 dark:text-gray-100">{{ $school->name }}</span>
+                </label>
+            @empty
+                <p class="text-sm text-gray-500 dark:text-gray-400">No schools available</p>
+            @endforelse
         @endisset
-    </select>
+    </div>
     <x-input-error :messages="$errors->get('school_ids')" class="mt-2" />
     <x-input-error :messages="$errors->get('school_ids.*')" class="mt-2" />
 </div>
